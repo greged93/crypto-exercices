@@ -8,15 +8,22 @@ pub enum EncryptionInputError {
     IncorrectPlaintextByteValue(u8),
     #[error("incorrect key byte value found {0}")]
     IncorrectKeyByteValue(u8),
+    #[error("incorrect value for is_encryption found {0}")]
+    IncorrectIsEncryptionValue(i8),
     #[error("utf8 error")]
     UTF8Error(#[from] std::string::FromUtf8Error),
 }
 
-fn encrypt_string(plaintext: String, key: String) -> Result<String, EncryptionInputError> {
-    let incorrect_byte = plaintext
-        .as_bytes()
-        .into_iter()
-        .find(|&&b| b < 65 || b > 90);
+/// encrypts or decrypts the provided input based on the i8 is_encryption
+///
+/// is_encryption = 1: the input is encrypted
+/// is_encryption = -1: the input is decrypted
+pub fn vigenere(
+    input: String,
+    key: String,
+    is_encryption: i8,
+) -> Result<String, EncryptionInputError> {
+    let incorrect_byte = input.as_bytes().into_iter().find(|&&b| b < 65 || b > 90);
     if let Some(b) = incorrect_byte {
         return Err(EncryptionInputError::IncorrectPlaintextByteValue(*b));
     }
@@ -24,23 +31,32 @@ fn encrypt_string(plaintext: String, key: String) -> Result<String, EncryptionIn
     if let Some(b) = incorrect_byte {
         return Err(EncryptionInputError::IncorrectKeyByteValue(*b));
     }
+    if ![-1i8, 1i8].contains(&is_encryption) {
+        return Err(EncryptionInputError::IncorrectIsEncryptionValue(
+            is_encryption,
+        ));
+    }
     let lk = key.len();
-    let encrypted: Vec<u8> = plaintext
+    let encrypted: Vec<u8> = input
         .as_bytes()
         .into_iter()
         .enumerate()
-        .map(|(i, x)| slide(*x, key.as_bytes()[i % lk] - 65))
+        .map(|(i, x)| {
+            slide(
+                *x,
+                (key.as_bytes()[i % lk] - 65) as i8 * is_encryption as i8,
+            )
+        })
         .collect();
     Ok(String::from_utf8(encrypted).map_err(EncryptionInputError::from)?)
 }
 
-fn slide(input: u8, key: u8) -> u8 {
-    let mut out = input + key;
-    loop {
-        if out < 91 {
-            break out;
-        }
-        out = out % 91 + 65;
+fn slide(input: u8, key: i8) -> u8 {
+    let out = input as i8 + key;
+    match out {
+        out if out > 90 => (out % 91 + 65) as u8,
+        out if out < 65 => (91 - (65 - out)) as u8,
+        _ => out as u8,
     }
 }
 

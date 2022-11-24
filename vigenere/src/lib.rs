@@ -1,5 +1,3 @@
-use std::result;
-
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -65,19 +63,53 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_slide() {
+    fn test_slide_encrypt() {
         assert_eq!(90, slide(70, 20));
         assert_eq!(65, slide(90, 1));
         assert_eq!(80, slide(70, 10));
-        assert_eq!(80, slide(70, 36));
-        assert_eq!(89, slide(76, 65));
+        assert_eq!(65, slide(70, 21));
+        assert_eq!(75, slide(76, 25));
     }
 
     #[test]
-    fn test_encrypted() {
+    fn test_slide_decrypt() {
+        assert_eq!(65, slide(70, -5));
+        assert_eq!(75, slide(90, -15));
+        assert_eq!(76, slide(70, -20));
+        assert_eq!(65, slide(65, -26));
+    }
+
+    #[test]
+    #[should_panic(expected = "IncorrectPlaintextByteValue")]
+    fn test_vigenere_incorrect_bytes_input() {
+        vigenere(String::from("@*(&%"), String::from("LEMON"), 1).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "IncorrectKeyByteValue")]
+    fn test_vigenere_incorrect_bytes_key() {
+        vigenere(String::from("ATTACKATDAWN"), String::from("@*(&%"), 1).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "IncorrectIsEncryptionValue")]
+    fn test_vigenere_incorrect_is_encryption() {
+        vigenere(String::from("ATTACKATDAWN"), String::from("LEMON"), 2).unwrap();
+    }
+
+    #[test]
+    fn test_encrypted_passes() {
         assert_eq!(
             String::from("LXFOPVEFRNHR"),
-            encrypt_string(String::from("ATTACKATDAWN"), String::from("LEMON")).unwrap()
+            vigenere(String::from("ATTACKATDAWN"), String::from("LEMON"), 1).unwrap()
+        )
+    }
+
+    #[test]
+    fn test_decrypt_passes() {
+        assert_eq!(
+            String::from("ATTACKATDAWN"),
+            vigenere(String::from("LXFOPVEFRNHR"), String::from("LEMON"), -1).unwrap()
         )
     }
 }

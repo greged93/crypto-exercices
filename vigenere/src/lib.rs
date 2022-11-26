@@ -12,15 +12,27 @@ pub enum EncryptionInputError {
     UTF8Error(#[from] std::string::FromUtf8Error),
 }
 
-/// encrypts or decrypts the provided input based on the i8 is_encryption
-///
-/// is_encryption = 1: the input is encrypted
-/// is_encryption = -1: the input is decrypted
-pub fn vigenere(
-    input: String,
-    key: String,
-    is_encryption: i8,
-) -> Result<String, EncryptionInputError> {
+fn encrypt(plaintext: String, key: String) -> Result<String, EncryptionInputError> {
+    let encyption = |i: u8, k: u8| {
+        let out = i + k;
+        return if out > 90 { out % 91 + 65 } else { out };
+    };
+    vigenere(plaintext, key, encyption)
+}
+
+fn decrypt(plaintext: String, key: String) -> Result<String, EncryptionInputError> {
+    let decrypt = |i: u8, k: u8| {
+        let out = i - k;
+        return if out < 65 { 91 - (65 - out) } else { out };
+    };
+    vigenere(plaintext, key, decrypt)
+}
+
+/// encrypts or decrypts the provi, dd input based on the closure received
+pub fn vigenere<F>(input: String, key: String, function: F) -> Result<String, EncryptionInputError>
+where
+    F: Fn(u8, u8) -> u8,
+{
     let incorrect_byte = input.as_bytes().into_iter().find(|&&b| b < 65 || b > 90);
     if let Some(b) = incorrect_byte {
         return Err(EncryptionInputError::IncorrectPlaintextByteValue(*b));
@@ -29,33 +41,14 @@ pub fn vigenere(
     if let Some(b) = incorrect_byte {
         return Err(EncryptionInputError::IncorrectKeyByteValue(*b));
     }
-    if ![-1i8, 1i8].contains(&is_encryption) {
-        return Err(EncryptionInputError::IncorrectIsEncryptionValue(
-            is_encryption,
-        ));
-    }
     let lk = key.len();
     let encrypted: Vec<u8> = input
         .as_bytes()
         .into_iter()
         .enumerate()
-        .map(|(i, x)| {
-            slide(
-                *x,
-                (key.as_bytes()[i % lk] - 65) as i8 * is_encryption as i8,
-            )
-        })
+        .map(|(i, x)| function(*x, key.as_bytes()[i % lk] - 65))
         .collect();
     Ok(String::from_utf8(encrypted).map_err(EncryptionInputError::from)?)
-}
-
-fn slide(input: u8, key: i8) -> u8 {
-    let out = input as i8 + key;
-    match out {
-        out if out > 90 => (out % 91 + 65) as u8,
-        out if out < 65 => (91 - (65 - out)) as u8,
-        _ => out as u8,
-    }
 }
 
 #[cfg(test)]
@@ -63,45 +56,27 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_slide_encrypt() {
-        assert_eq!(90, slide(70, 20));
-        assert_eq!(65, slide(90, 1));
-        assert_eq!(80, slide(70, 10));
-        assert_eq!(65, slide(70, 21));
-        assert_eq!(75, slide(76, 25));
-    }
-
-    #[test]
-    fn test_slide_decrypt() {
-        assert_eq!(65, slide(70, -5));
-        assert_eq!(75, slide(90, -15));
-        assert_eq!(76, slide(70, -20));
-        assert_eq!(65, slide(65, -26));
-    }
-
-    #[test]
     #[should_panic(expected = "IncorrectPlaintextByteValue")]
     fn test_vigenere_incorrect_bytes_input() {
-        vigenere(String::from("@*(&%"), String::from("LEMON"), 1).unwrap();
+        vigenere(String::from("@*(&%"), String::from("LEMON"), |i, k| i * k).unwrap();
     }
 
     #[test]
     #[should_panic(expected = "IncorrectKeyByteValue")]
     fn test_vigenere_incorrect_bytes_key() {
-        vigenere(String::from("ATTACKATDAWN"), String::from("@*(&%"), 1).unwrap();
-    }
-
-    #[test]
-    #[should_panic(expected = "IncorrectIsEncryptionValue")]
-    fn test_vigenere_incorrect_is_encryption() {
-        vigenere(String::from("ATTACKATDAWN"), String::from("LEMON"), 2).unwrap();
+        vigenere(
+            String::from("ATTACKATDAWN"),
+            String::from("@*(&%"),
+            |i, k| i * k,
+        )
+        .unwrap();
     }
 
     #[test]
     fn test_encrypted_passes() {
         assert_eq!(
             String::from("LXFOPVEFRNHR"),
-            vigenere(String::from("ATTACKATDAWN"), String::from("LEMON"), 1).unwrap()
+            encrypt(String::from("ATTACKATDAWN"), String::from("LEMON")).unwrap()
         )
     }
 
@@ -109,7 +84,7 @@ mod tests {
     fn test_decrypt_passes() {
         assert_eq!(
             String::from("ATTACKATDAWN"),
-            vigenere(String::from("LXFOPVEFRNHR"), String::from("LEMON"), -1).unwrap()
+            decrypt(String::from("LXFOPVEFRNHR"), String::from("LEMON")).unwrap()
         )
     }
 }

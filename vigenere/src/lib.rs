@@ -41,14 +41,15 @@ where
     if let Some(b) = incorrect_byte {
         return Err(EncryptionInputError::IncorrectKeyByteValue(*b));
     }
+    let k_it = key.as_bytes().iter().cycle();
     let lk = key.len();
-    let encrypted: Vec<u8> = input
+    let output: Vec<u8> = input
         .as_bytes()
         .into_iter()
-        .enumerate()
-        .map(|(i, x)| function(*x, key.as_bytes()[i % lk] - 65))
+        .zip(k_it)
+        .map(|(i, k)| function(*i, *k - 65))
         .collect();
-    Ok(String::from_utf8(encrypted).map_err(EncryptionInputError::from)?)
+    Ok(String::from_utf8(output).map_err(EncryptionInputError::from)?)
 }
 
 #[cfg(test)]

@@ -65,7 +65,7 @@ where
         .zip(k_it)
         .map(|(i, k)| function(*i, *k - 65))
         .collect();
-    Ok(String::from_utf8(output).map_err(EncryptionInputError::from)?)
+    String::from_utf8(output).map_err(EncryptionInputError::from)
 }
 
 #[cfg(test)]

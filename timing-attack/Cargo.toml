@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-criterion = "0.4"
+criterion = {version = "0.4", feature="html_reports"}
 rand = "0.8.5"
 
 [[bench]]
-name = "timing_bench_array"
+name = "timing_bench_u64"
 harness = false

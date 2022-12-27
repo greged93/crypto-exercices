@@ -23,7 +23,7 @@ fn branching_u64(x: [u64; 100]) {
     }
 }
 
-fn bench_branching_u64(c: &mut Criterion) {
+fn bench_branching_array(c: &mut Criterion) {
     let mut group = c.benchmark_group("Branching");
     let random: [u64; 100] = thread_rng()
         .sample_iter(Uniform::new(1u64, 100u64))
@@ -42,12 +42,12 @@ fn bench_branching_u64(c: &mut Criterion) {
     .iter()
     .enumerate()
     {
-        group.bench_with_input(BenchmarkId::new("branch u64", i), arr, |b, arr| {
+        group.bench_with_input(BenchmarkId::new("branch array", i), arr, |b, arr| {
             b.iter(|| branching_u64(*arr))
         });
     }
     group.finish();
 }
 
-criterion_group!(benches, bench_branching_u64);
+criterion_group!(benches, bench_branching_array);
 criterion_main!(benches);

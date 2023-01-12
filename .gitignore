@@ -1,3 +1,5 @@
 target
 /*/.idea
 /*/*.lock
+*.DS_STORE
+*/.vscode
